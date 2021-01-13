@@ -1,6 +1,7 @@
 # BleatCode
+# By Mohammad Hamzah and Michael Hu
 
-A programming learning platform. Unlike LeetCode, BleatCode is free and there are no "premium" privileges - all goats are comrades in the BleatCode community. Languages are also detected automatically based on the file extension.
+This project is a programming learning platform. Unlike LeetCode, BleatCode is free and there are no "premium" privileges - all goats are comrades in the BleatCode community. Languages are also detected automatically based on the file extension.
 
 # Client Blueprint
 The client side allows users to do six basic tasks:
