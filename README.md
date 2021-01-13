@@ -1,5 +1,5 @@
 # BleatCode
-### By Mohammad Hamzah and Michael Hu
+#### By Mohammad Hamzah and Michael Hu
 
 This project is a programming learning platform. Unlike LeetCode, BleatCode is free and there are no "premium" privileges - all goats are comrades in the BleatCode community. Languages are also detected automatically based on the file extension.
 
@@ -13,7 +13,6 @@ The client side allows users to do six basic tasks:
 6. Save solution files on backend
 
 # Server Blueprint
-
 The server side handles the following tasks:
 1. Create accounts and verify logins to create login sessions
 2. Send the problem list to newly connected clients
@@ -22,7 +21,6 @@ The server side handles the following tasks:
 5. Save solution files
 
 # Topics Used
-
 The following topics are implemented in this project:
 1. Allocating memory and structs
 2. Working with files and file information
@@ -31,4 +29,5 @@ The following topics are implemented in this project:
 5. Shared memory (from multithreading)
 6. Shell commands
 
+# Timeline for Completion
 
