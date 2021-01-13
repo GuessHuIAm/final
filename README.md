@@ -1,5 +1,5 @@
 # BleatCode
-# By Mohammad Hamzah and Michael Hu
+### By Mohammad Hamzah and Michael Hu
 
 This project is a programming learning platform. Unlike LeetCode, BleatCode is free and there are no "premium" privileges - all goats are comrades in the BleatCode community. Languages are also detected automatically based on the file extension.
 
