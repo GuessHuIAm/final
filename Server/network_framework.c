@@ -6,25 +6,22 @@
 #include <netinet/in.h> 
 #include <pthread.h> 
 #include "communication_protocol.h"
+#include "network_framework.h"
+#include "packet_handler.h"
 
 int curr_capacity = 100;
 int server_socket;
-int curr_index = 0;
-struct client {
-	int socket;
-	char receive_buffer[1024];
-};
+int curr_index = -1;
 struct client **clients;
+struct send_struct {int id; char *sdata;};
 
-//accept each client in queue?
-//listen/accept async problem
+//requests are handled in reverse order!!
+//client 0 disconnecting wastes some memory
+//need actual async sends/receives
+//parse requests
 
-int get_client_socket(int client_ID) {
-	return clients[client_ID]->socket;
-}
-
-char *get_client_buffer(int client_ID) {
-	return clients[client_ID]->receive_buffer;
+struct client *get_client(int client_ID) {
+	return clients[client_ID];
 }
 
 int get_last_index() {
@@ -32,14 +29,7 @@ int get_last_index() {
 }
 
 void resize_clients() {
-	struct client **new_clients = malloc(sizeof(long) * curr_capacity * 2);
-	int i;
-	for (i = 0; i <= curr_index; i++) {
-		new_clients[i] = clients[i];
-	}
-	free(clients);
-
-	clients = new_clients;
+	clients = realloc(clients, sizeof(long) * curr_capacity * 2);
 	curr_capacity *= 2;
 }
 
@@ -53,32 +43,34 @@ void disconnect(int client_ID) {
 	}
 }
 
-struct send_struct {int id; char *sdata;};
-
-void send_function(struct send_struct p) {
-	send(clients[p.id]->socket, p.sdata, strlen(p.sdata), 0);
+void *send_function(void *p) {
+	struct send_struct *ps = (struct send_struct *)p;
+	send(clients[ps->id]->socket, ps->sdata, strlen(ps->sdata), 0);
+	return NULL;
 }
 
 void async_send(int client_ID, char *data) {
-	struct send_struct p;
-	p.id = client_ID;
-	p.sdata = data;
+	struct send_struct *p;
+	p->id = client_ID;
+	p->sdata = data;
 	pthread_t sendt;
-	pthread_create(&sendt, NULL, send_function, send_struct);
+	pthread_create(&sendt, NULL, send_function, (void *)p);
 }
 
-void receive_function(int client_ID) {
+void *receive_function(void *rclient) {
+	struct client *curr_client = (struct client *)rclient;
 	while (1) {
-		read(clients[client_ID]->socket, clients[client_ID]->receive_buffer, sizeof(clients[client_ID]->receive_buffer));
+		read(curr_client->socket, curr_client->receive_buffer, sizeof(curr_client->receive_buffer));
 	}
+	return NULL;
 }
 
 void async_receive(int client_ID) {
 	pthread_t receivet;
-	pthread_create(&receivet, NULL, receive_function, client_ID);
+	pthread_create(&receivet, NULL, receive_function, (void *)clients[client_ID]);
 }
 
-void handle_connections() {
+void *handle_connections(void *vargp) {
 	clients = malloc(sizeof(long) * curr_capacity);
 
 	//Create the server socket
@@ -96,34 +88,39 @@ void handle_connections() {
 	bind(server_socket, (struct sockaddr *)&binding_info, sizeof(binding_info));
 	
 	//Start accepting incoming client connections
-	while (1)  {
-		listen(server_socket, 1000);
+	listen(server_socket, 1000);
 
-		int info_length = sizeof(binding_info);
-		int new_client = accept(server_socket, (struct sockaddr *)&binding_info, (socklen_t *)&info_length);
-
-		async_receive(new_client);
-
-		if (clients[curr_index]->socket < 0) {
-			clients[-1 * clients[curr_index]->socket]->socket = new_client;
+	int info_length = sizeof(binding_info);
+	int new_socket;
+	int client_ID;
+	while ((new_socket = accept(server_socket, (struct sockaddr *)&binding_info, (socklen_t *)&info_length))) {
+		if (curr_index != -1 && clients[curr_index]->socket < 0) {
+			struct client new_client;
+			clients[-1 * clients[curr_index]->socket] = &new_client;
+			clients[-1 * clients[curr_index]->socket]->socket = new_socket;
+			client_ID = -1 * clients[curr_index]->socket;
+			clean_buffer(clients[-1 * clients[curr_index]->socket]);
+			clients[-1 * clients[curr_index]->socket]->num_requests = 0;
 			clients[curr_index]->socket = 0;
 			if (clients[curr_index - 1]->socket < 0) {
 				curr_index--;
 			}
 		} else {
-			clients[curr_index]->socket = new_client;
+			struct client new_client;
 			curr_index++;
+			clients[curr_index] = &new_client;
+			clients[curr_index]->socket = new_socket;
+			client_ID = curr_index;
+			clean_buffer(clients[curr_index]);
+			clients[curr_index]->num_requests = 0;
 			if (curr_index == curr_capacity - 1) {
 				resize_clients();
 			}
 		}
-	}
-}
 
-void reset_client_buffer(int curr_client) {
-	char *buff = clients[curr_client]->receive_buffer;
-	int i;
-	for (i = 0; i <= 3; i++) {
-		*(buff + i) = 0;
+		printf("Client %d connected\n", client_ID);
+
+		async_receive(client_ID);
 	}
+	return NULL;
 }

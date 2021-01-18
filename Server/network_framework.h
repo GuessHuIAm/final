@@ -1,6 +1,12 @@
-int get_client_socket(int client_ID);
-char *get_client_buffer(int client_ID);
+struct client {
+	int socket;
+	char receive_buffer[1500]; //TCP MTU size
+	char requests[100][1024];
+	int num_requests;
+};
+struct client *get_client(int client_ID);
 int get_last_index();
-void handle_connections();
+void *handle_connections();
 void disconnect(int client_ID);
-void reset_client_buffer(int curr_client);
+void async_send(int client_ID, char *data);
+void async_receive(int client_ID);

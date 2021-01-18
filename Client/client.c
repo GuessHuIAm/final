@@ -5,5 +5,8 @@
 #include "task_handler.h"
 
 int main() {
+	printf("Connecting to server...\n");
+	connect_server();
+	printf("Connection established\n");
 	return 0;
 }
