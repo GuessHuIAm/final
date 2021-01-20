@@ -16,7 +16,6 @@ void disconnect() {
 	int num_params = 0;
 	send_packet(DISCONNECT_REQUEST, params, num_params);
 
-	send(this_client->socket, req, sizeof(req), 0);
 	close(this_client->socket);
 }
 
@@ -49,6 +48,8 @@ void connect_server() {
 	this_client = &new_client;
 	clean_buffer(this_client);
 	this_client->num_requests = 0;
+	this_client->last_index = 0;
+	this_client->num_params = 0;
 
 	//Create the client socket
 	this_client->socket = socket(AF_INET, SOCK_STREAM, 0);

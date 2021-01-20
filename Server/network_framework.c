@@ -15,10 +15,10 @@ int curr_index = -1;
 struct client **clients;
 struct send_struct {int id; char *sdata;};
 
-//requests are handled in reverse order!!
+//protect shared memory (mutex locks)
+//add alive packets
 //client 0 disconnecting wastes some memory
 //need actual async sends/receives
-//parse requests
 
 struct client *get_client(int client_ID) {
 	return clients[client_ID];
@@ -34,6 +34,7 @@ void resize_clients() {
 }
 
 void disconnect(int client_ID) {
+	printf("SUPPP\n");
 	close(clients[client_ID]->socket);
 	free(clients[client_ID]);
 	clients[curr_index]->socket = -1 * client_ID;
@@ -41,6 +42,7 @@ void disconnect(int client_ID) {
 	if (curr_index == curr_capacity - 1) {
 		resize_clients();
 	}
+	printf("Client %d disconnected\n", client_ID);
 }
 
 void *send_function(void *p) {
@@ -101,6 +103,8 @@ void *handle_connections(void *vargp) {
 			client_ID = -1 * clients[curr_index]->socket;
 			clean_buffer(clients[-1 * clients[curr_index]->socket]);
 			clients[-1 * clients[curr_index]->socket]->num_requests = 0;
+			clients[-1 * clients[curr_index]->socket]->last_index = 0;
+			clients[-1 * clients[curr_index]->socket]->num_params = 0;
 			clients[curr_index]->socket = 0;
 			if (clients[curr_index - 1]->socket < 0) {
 				curr_index--;
@@ -113,6 +117,8 @@ void *handle_connections(void *vargp) {
 			client_ID = curr_index;
 			clean_buffer(clients[curr_index]);
 			clients[curr_index]->num_requests = 0;
+			clients[curr_index]->last_index = 0;
+			clients[curr_index]->num_params = 0;
 			if (curr_index == curr_capacity - 1) {
 				resize_clients();
 			}
