@@ -11,6 +11,7 @@ void *start_task_handler(void *vargp) {
 		for (curr_client = 0; curr_client <= get_last_index(); curr_client++) {
 			struct client *this_client = get_client(curr_client);
 			if (this_client->receive_buffer[0] != 0) {
+				printf("Something happened, num requests is %d\n", this_client->num_requests);
 				handle_receive_packet(this_client);
 			}
 			if (this_client->num_requests > 100) {

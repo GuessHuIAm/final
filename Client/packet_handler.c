@@ -79,7 +79,7 @@ void send_packet(int REQUEST_ID, char **params, int num_params) {
 
     char req_id[5];
 	sprintf(req_id, "%04d", REQUEST_ID);
-    strcat(buffer, req_id);
+    strncpy(buffer, req_id, 5);
 
     for (i = 0; i < num_params; i++) {
         char del[2];
@@ -88,8 +88,17 @@ void send_packet(int REQUEST_ID, char **params, int num_params) {
         strcat(*(params + i), del);
         strcat(buffer, *(params + i));
     }
+    buffer[buffer_size + 4] = 15; //EOP
+    buffer[buffer_size + 5] = 0;
 
-    buffer[buffer_size - 1] = 15; //EOP
+    printf("GOBBLY GOOK: ");
+	i = 0;
+	while (*(buffer + i) != 0) {
+		printf("%c", *(buffer + i));
+        i++;
+	}
+	printf("\n");
+
 
     async_send(buffer);
 }

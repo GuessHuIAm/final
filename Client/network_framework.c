@@ -5,6 +5,7 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <pthread.h> 
+#include <errno.h>
 #include "communication_protocol.h"
 #include "network_framework.h"
 #include "packet_handler.h"
@@ -21,6 +22,13 @@ void disconnect() {
 
 void *send_function(void *p) {
 	char *ps = (char *)p;
+	printf("SENT DATA: ");
+	int i = 0;
+	while (*(ps + i) != 15) {
+		printf("%c", *(ps + i));
+		i++;
+	}
+	printf("\n");
 	send(this_client->socket, ps, strlen(ps), 0);
 	return NULL;
 }
@@ -34,6 +42,13 @@ void *receive_function(void *rclient) {
 	struct client *curr_client = (struct client *)rclient;
 	while (1) {
 		read(curr_client->socket, curr_client->receive_buffer, sizeof(curr_client->receive_buffer));
+		printf("READ DATA: ");
+		int i = 0;
+		while (*(curr_client->receive_buffer + i) != 15) {
+			printf("%c", *(curr_client->receive_buffer + i));
+			i++;
+		}
+		printf("\n");
 	}
 	return NULL;
 }
@@ -52,18 +67,30 @@ void connect_server() {
 	this_client->num_params = 0;
 
 	//Create the client socket
-	this_client->socket = socket(AF_INET, SOCK_STREAM, 0);
+	if ((this_client->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		printf("FAILED TO CREATE SOCKET: %s\n", strerror(errno));
+		return;
+	}
 
 	//Prevent an address and port reuse error from occurring
 	int opt = 1;
-	setsockopt(this_client->socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+	if ((setsockopt(this_client->socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))) {
+		printf("SETSOCKOPT FAILED: %s\n", strerror(errno));
+		return;
+	}
 
 	//Connect to server address and port
 	struct sockaddr_in binding_info; 
 	binding_info.sin_family = AF_INET;
-	inet_pton(AF_INET, "127.0.0.1", &binding_info.sin_addr);
+	if (inet_pton(AF_INET, "127.0.0.1", &binding_info.sin_addr) <= 0) {
+		printf("INET_PTON FAILED: %s\n", strerror(errno));
+		return;
+	}
     binding_info.sin_port = htons(8000);
-	connect(this_client->socket, (struct sockaddr *)&binding_info, sizeof(binding_info));
+	if (connect(this_client->socket, (struct sockaddr *)&binding_info, sizeof(binding_info)) < 0) {
+		printf("CONNECT FAILED: %s\n", strerror(errno));
+		return;
+	}
 }
 
 struct client *get_client() {

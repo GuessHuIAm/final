@@ -34,7 +34,7 @@ void handle_receive_packet(struct client *curr_client) {
     char *buff = curr_client->receive_buffer;
     char *request = buff;
     int found = 1;
-    while (found || request != buff + 1500) {
+    while (found || (request != buff + 1500)) {
         found = 0;
         char *i;
         for (i = request; i <= buff + 1499; i++) {
@@ -83,7 +83,7 @@ void send_packet(int client_ID, int REQUEST_ID, char **params, int num_params) {
 
     char req_id[5];
 	sprintf(req_id, "%04d", REQUEST_ID);
-    strcat(buffer, req_id);
+    strcpy(buffer, req_id);
 
     for (i = 0; i < num_params; i++) {
         char del[2];
@@ -93,7 +93,8 @@ void send_packet(int client_ID, int REQUEST_ID, char **params, int num_params) {
         strcat(buffer, *(params + i));
     }
 
-    buffer[buffer_size - 1] = 15; //EOP
+    buffer[buffer_size + 4] = 15; //EOP
+    buffer[buffer_size + 5] = 0;
 
     async_send(client_ID, buffer);
 }
